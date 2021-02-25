@@ -1,22 +1,40 @@
 
 from flask import Flask, render_template, request,send_file,redirect
 from werkzeug.utils import secure_filename
-import os
 import json
 import requests
+from flask import jsonify
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import set_access_cookies
+from flask_jwt_extended import unset_jwt_cookies
 import bcrypt
-from pymongo import MongoClient
-import python_jwt as jwt, jwcrypto.jwk as jwk, datetime
+import pymongo
+# import python_jwt as jwt, jwcrypto.jwk as jwk, datetime
 
 
 app = Flask(__name__)
-cluster = MongoClient('mongodb+srv://phattaraphon:0989153312@cluster0.trckf.mongodb.net/flutter?retryWrites=true&w=majority')
-db = cluster["flutter"]
-collection = db['test']
-dbUser = db['User'] 
+app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies", "json", "query_string"]
+
+# If true this will only allow the cookies that contain your JWTs to be sent
+# over https. In production, this should always be set to True
+app.config["JWT_COOKIE_SECURE"] = False
+
+# Change this in your code!
+app.config["JWT_SECRET_KEY"] = "super-secret"
+
+jwt = JWTManager(app)
+cluster = pymongo.MongoClient('mongodb+srv://phattaraphon:0989153312@cluster0.trckf.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
+# cluster = pymongo.MongoClient('mongodb+srv://phattaraphon:0989153312@cluster0.trckf.mongodb.net/flutter?retryWrites=true&w=majority')
+db = cluster.flutter
+collection = db.test
+dbUser = db.User
+print(cluster.list_database_names())
 @app.route('/')
 def hello_world():
-    return 'Hello from Flask!888'
+    tt = str(cluster.list_database_names())
+    return tt
 @app.route('/uploader', methods = ['GET', 'POST'])
 def upload_file():
    if request.method == 'POST':
@@ -76,12 +94,13 @@ def singin():
           name = str(user[0]['name'])
           email = str(user[0]['email'])
           # key = jwk.JWK.generate(kty='RSA', size=2048)
-          key = ''
-          payload = { 'id': ids, 'name': name,"email":email }
-          token = jwt.generate_jwt(payload, key, 'HS256')
+          # key = ''
+          # payload = { 'id': ids, 'name': name,"email":email }
+          # token = jwt.generate_jwt(payload, key, 'HS256')
           # token = jwt.encode({'id': ids, 'name': name,'email': email},key="",algorithm="HS256")
           # return "Match"
           # return {'status':'singin success',"id":ids,"name":name,"email":email}
+          token = create_access_token({ 'id': ids, 'name': name,"email":email })
           return {'status':'singin success','token':token}
         else:
           print("does not match")
